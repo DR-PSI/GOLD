@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AURUM — Gold Trading Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --gold: #D4A843;
+      --gold-light: #F0C96B;
+      --gold-dim: #8B6914;
+      --bg: #0A0B0D;
+      --bg2: #0F1115;
+      --bg3: #161A1F;
+      --bg4: #1E2329;
+      --border: rgba(212,168,67,0.15);
+      --border2: rgba(255,255,255,0.06);
+      --text: #E8E8E8;
+      --text2: #8A8FA8;
+      --text3: #4A4F62;
+      --green: #00D37F;
+      --green-dim: rgba(0,211,127,0.12);
+      --red: #FF4757;
+      --red-dim: rgba(255,71,87,0.12);
+      --blue: #3B82F6;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── NOISE OVERLAY ─── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; opacity: 0.4;
+    }
+
+    /* ─── LAYOUT ─── */
+    .app { display: grid; grid-template-rows: 56px 1fr; height: 100vh; position: relative; z-index: 1; }
+
+    /* ─── TOPBAR ─── */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+      background: rgba(10,11,13,0.9);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      position: relative; z-index: 100;
+    }
+    .logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px; font-weight: 700;
+      letter-spacing: 0.12em;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo span { font-weight: 400; }
+    .topbar-center { display: flex; gap: 4px; }
+    .tab-btn {
+      padding: 6px 16px; border-radius: 6px; border: none;
+      background: transparent; color: var(--text2);
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--text); background: var(--bg4); }
+    .tab-btn.active { color: var(--gold); background: rgba(212,168,67,0.1); }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      color: var(--green); text-transform: uppercase;
+    }
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: var(--bg); cursor: pointer;
+    }
+
+    /* ─── MAIN CONTENT ─── */
+    .main { display: grid; grid-template-columns: 280px 1fr 320px; overflow: hidden; }
+
+    /* ─── LEFT PANEL ─── */
+    .left-panel {
+      background: var(--bg2);
+      border-right: 1px solid var(--border2);
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .panel-section { padding: 16px; border-bottom: 1px solid var(--border2); }
+    .panel-title {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+      color: var(--text3); text-transform: uppercase; margin-bottom: 12px;
+    }
+
+    /* Gold Prices */
+    .price-card {
+      padding: 12px 14px; border-radius: 10px;
+      background: var(--bg3); border: 1px solid var(--border2);
+      cursor: pointer; transition: all 0.2s; margin-bottom: 6px;
+    }
+    .price-card:hover, .price-card.active { border-color: var(--border); background: var(--bg4); }
+    .price-card.active { border-color: rgba(212,168,67,0.4); }
+    .pc-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .pc-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .pc-tag { font-size: 10px; color: var(--text3); background: var(--bg4); padding: 2px 6px; border-radius: 4px; }
+    .pc-price {
+      font-family: 'DM Mono', monospace;
+      font-size: 18px; font-weight: 500; color: var(--gold-light);
+      margin: 6px 0 4px;
+    }
+    .pc-bottom { display: flex; justify-content: space-between; align-items: center; }
+    .pc-change { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; }
+    .pc-change.up { color: var(--green); }
+    .pc-change.down { color: var(--red); }
+    .pc-spread { font-size: 11px; color: var(--text3); }
+
+    /* Mini Sparkline */
+    .sparkline { margin-top: 8px; }
+    .sparkline svg { width: 100%; height: 32px; }
+
+    /* ─── CENTER PANEL ─── */
+    .center-panel { display: flex; flex-direction: column; overflow: hidden; }
+
+    /* Price Header */
+    .price-header {
+      padding: 20px 24px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ph-left { display: flex; align-items: baseline; gap: 16px; }
+    .ph-name { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; color: var(--text); }
+    .ph-price {
+      font-family: 'DM Mono', monospace;
+      font-size: 36px; font-weight: 500;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .ph-change-badge {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600;
+      font-family: 'DM Mono', monospace;
+    }
+    .ph-change-badge.up { background: var(--green-dim); color: var(--green); }
+    .ph-change-badge.down { background: var(--red-dim); color: var(--red); }
+    .ph-stats { display: flex; gap: 24px; }
+    .ph-stat { text-align: right; }
+    .ph-stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+    .ph-stat-val { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+    /* Chart Area */
+    .chart-area {
+      flex: 1; padding: 24px;
+      display: flex; flex-direction: column; gap: 16px;
+      overflow-y: auto;
+    }
+
+    .chart-timeframes { display: flex; gap: 4px; }
+    .tf-btn {
+      padding: 5px 12px; border-radius: 6px; border: none;
+      background: var(--bg3); color: var(--text2);
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .tf-btn:hover { color: var(--text); }
+    .tf-btn.active { background: rgba(212,168,67,0.15); color: var(--gold); }
+
+    .chart-container {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 12px; padding: 20px;
+      position: relative; overflow: hidden;
+    }
+    .chart-container canvas { width: 100% !important; }
+
+    /* Order Book Preview */
+    .orderbook-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .ob-side {
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 10px; padding: 14px;
+    }
+    .ob-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+    .ob-buy { color: var(--green); }
+    .ob-sell { color: var(--red); }
+    .ob-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .ob-price { font-family: 'DM Mono', monospace; font-size: 12px; }
+    .ob-row.buy .ob-price { color: var(--green); }
+    .ob-row.sell .ob-price { color: var(--red); }
+    .ob-vol { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3); }
+    .ob-bar-wrap { position: relative; margin-bottom: 2px; }
+    .ob-bar {
+      position: absolute; top: 0; height: 100%; border-radius: 2px; opacity: 0.12;
+    }
+    .ob-bar.buy { background: var(--green); right: 0; }
+    .ob-bar.sell { background: var(--red); left: 0; }
+
+    /* ─── RIGHT PANEL ─── */
+    .right-panel {
+      background: var(--bg2);
+      border-left: 1px solid var(--border2);
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+    }
+
+    /* Order Form */
+    .order-form { padding: 20px; border-bottom: 1px solid var(--border2); }
+    .order-tabs { display: flex; margin-bottom: 16px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border2); }
+    .order-tab {
+      flex: 1; padding: 9px; border: none; background: var(--bg3);
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em;
+    }
+    .order-tab.buy.active { background: var(--green); color: #000; }
+    .order-tab.sell.active { background: var(--red); color: #fff; }
+    .order-tab:not(.active) { color: var(--text3); }
+    .order-tab.buy:not(.active):hover { color: var(--green); }
+    .order-tab.sell:not(.active):hover { color: var(--red); }
+
+    .form-row { margin-bottom: 14px; }
+    .form-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; display: flex; justify-content: space-between; letter-spacing: 0.04em; }
+    .form-label span { color: var(--gold); font-family: 'DM Mono', monospace; }
+    .form-input {
+      width: 100%; padding: 10px 12px;
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 8px; color: var(--text);
+      font-family: 'DM Mono', monospace; font-size: 14px;
+      outline: none; transition: border 0.2s;
+    }
+    .form-input:focus { border-color: var(--border); }
+    .form-select {
+      width: 100%; padding: 10px 12px;
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 8px; color: var(--text);
+      font-family: 'Inter', sans-serif; font-size: 13px;
+      outline: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A8FA8' stroke-width='1.5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      cursor: pointer;
+    }
+    .form-select:focus { border-color: var(--border); }
+
+    .qty-presets { display: flex; gap: 6px; margin-top: 6px; }
+    .qty-preset {
+      flex: 1; padding: 5px; border-radius: 5px;
+      background: var(--bg3); border: 1px solid var(--border2);
+      color: var(--text3); font-size: 11px; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .qty-preset:hover { border-color: var(--border); color: var(--gold); }
+
+    .order-summary {
+      background: var(--bg3); border-radius: 8px; padding: 12px;
+      margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .os-row { display: flex; justify-content: space-between; font-size: 12px; }
+    .os-label { color: var(--text2); }
+    .os-val { font-family: 'DM Mono', monospace; color: var(--text); }
+    .os-total .os-val { color: var(--gold-light); font-size: 14px; }
+
+    .submit-btn {
+      width: 100%; padding: 13px;
+      border: none; border-radius: 10px;
+      font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em;
+    }
+    .submit-btn.buy { background: var(--green); color: #000; }
+    .submit-btn.sell { background: var(--red); color: #fff; }
+    .submit-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+    .submit-btn:active { transform: translateY(0); }
+
+    /* Alert Section */
+    .alert-section { padding: 16px 20px; border-bottom: 1px solid var(--border2); }
+    .alert-form { display: flex; gap: 8px; margin-top: 8px; }
+    .alert-input {
+      flex: 1; padding: 8px 10px;
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 8px; color: var(--text);
+      font-family: 'DM Mono', monospace; font-size: 13px;
+      outline: none;
+    }
+    .alert-add-btn {
+      padding: 8px 14px; border-radius: 8px; border: none;
+      background: rgba(212,168,67,0.15); color: var(--gold);
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .alert-add-btn:hover { background: rgba(212,168,67,0.25); }
+    .alert-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .alert-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px; border-radius: 8px;
+      background: var(--bg3); border: 1px solid var(--border2);
+    }
+    .alert-item-left { display: flex; align-items: center; gap: 8px; }
+    .alert-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .alert-dot.above { background: var(--green); }
+    .alert-dot.below { background: var(--red); }
+    .alert-price { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text); }
+    .alert-dir { font-size: 11px; color: var(--text3); }
+    .alert-del {
+      width: 22px; height: 22px; border-radius: 5px; border: none;
+      background: transparent; color: var(--text3); cursor: pointer;
+      font-size: 14px; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .alert-del:hover { background: var(--red-dim); color: var(--red); }
+
+    /* Recent Orders */
+    .orders-section { padding: 16px 20px; flex: 1; }
+    .order-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .order-item {
+      padding: 10px 12px; border-radius: 8px;
+      background: var(--bg3); border: 1px solid var(--border2);
+      transition: border 0.2s; cursor: pointer;
+    }
+    .order-item:hover { border-color: var(--border); }
+    .oi-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .oi-type { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+    .oi-type.buy { color: var(--green); }
+    .oi-type.sell { color: var(--red); }
+    .oi-status {
+      font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+      letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .oi-status.filled { background: var(--green-dim); color: var(--green); }
+    .oi-status.pending { background: rgba(59,130,246,0.12); color: var(--blue); }
+    .oi-status.cancelled { background: rgba(255,255,255,0.05); color: var(--text3); }
+    .oi-bottom { display: flex; justify-content: space-between; }
+    .oi-qty { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2); }
+    .oi-price { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--gold); }
+    .oi-time { font-size: 11px; color: var(--text3); }
+
+    /* Alert Toast */
+    .toast-container { position: fixed; top: 70px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      padding: 12px 16px; border-radius: 10px;
+      background: var(--bg3); border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      animation: slideIn 0.3s ease; font-size: 13px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .toast-icon { font-size: 16px; }
+    .toast-msg { color: var(--text); }
+    .toast-time { font-size: 11px; color: var(--text3); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .main { grid-template-columns: 0 1fr 300px; }
+      .left-panel { display: none; }
+    }
+    @media (max-width: 768px) {
+      .main { grid-template-columns: 1fr; }
+      .right-panel { display: none; }
+    }
+
+    .notification-banner {
+      background: rgba(212,168,67,0.08);
+      border: 1px solid rgba(212,168,67,0.2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: var(--gold);
+    }
+
+    /* ─── API KEY MODAL ─── */
+    .api-modal-overlay {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .api-modal {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px; width: 420px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    }
+    .api-modal-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px; font-weight: 700; color: var(--gold-light);
+      margin-bottom: 6px;
+    }
+    .api-modal-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.6; }
+    .api-modal-sub a { color: var(--gold); text-decoration: none; }
+    .api-modal-sub a:hover { text-decoration: underline; }
+    .api-modal-input {
+      width: 100%; padding: 12px 14px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: 'DM Mono', monospace; font-size: 14px;
+      outline: none; margin-bottom: 12px; letter-spacing: 0.04em;
+    }
+    .api-modal-input:focus { border-color: var(--gold); }
+    .api-modal-btns { display: flex; gap: 10px; }
+    .api-connect-btn {
+      flex: 1; padding: 12px; border-radius: 10px; border: none;
+      background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+      color: #000; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em;
+    }
+    .api-connect-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .api-skip-btn {
+      padding: 12px 20px; border-radius: 10px;
+      border: 1px solid var(--border2);
+      background: transparent; color: var(--text2);
+      font-size: 13px; cursor: pointer; transition: all 0.2s;
+    }
+    .api-skip-btn:hover { color: var(--text); border-color: var(--border); }
+    .api-status-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 16px; font-size: 12px;
+    }
+    .api-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); }
+    .api-status-dot.connected { background: var(--green); animation: pulse 1.5s infinite; }
+    .api-status-dot.error { background: var(--red); }
+    .api-status-text { color: var(--text3); }
+    .api-status-text.connected { color: var(--green); }
+    .api-key-btn {
+      padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border2);
+      background: transparent; color: var(--text3);
+      font-size: 11px; font-weight: 500; cursor: pointer;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .api-key-btn:hover { border-color: var(--border); color: var(--gold); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">AURUM <span>GOLD</span></div>
+    <div class="topbar-center">
+      <button class="tab-btn active" onclick="switchTab(this,'dashboard')">Dashboard</button>
+      <button class="tab-btn" onclick="switchTab(this,'orders')">คำสั่งซื้อขาย</button>
+      <button class="tab-btn" onclick="switchTab(this,'alerts')">แจ้งเตือน</button>
+      <button class="tab-btn" onclick="switchTab(this,'history')">ประวัติ</button>
+    </div>
+    <div class="topbar-right">
+      <div class="api-status-bar">
+        <div class="api-status-dot" id="api-dot"></div>
+        <span class="api-status-text" id="api-status-text">ไม่ได้เชื่อมต่อ</span>
+        <button class="api-key-btn" onclick="showApiModal()">🔑 API Key</button>
+      </div>
+      <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+      <div class="user-avatar">T</div>
+    </div>
+  </div>
+
+  <!-- API KEY MODAL -->
+  <div class="api-modal-overlay" id="api-modal">
+    <div class="api-modal">
+      <div class="api-modal-title">🔑 เชื่อมต่อ Metals.dev API</div>
+      <div class="api-modal-sub">
+        ดึงราคาทองแบบ Real-time จาก <a href="https://metals.dev" target="_blank">metals.dev</a><br>
+        สมัครฟรีที่ <a href="https://metals.dev" target="_blank">metals.dev</a> → รับ API Key ทันที (ฟรี 50 req/เดือน)
+      </div>
+      <input class="api-modal-input" type="text" id="api-key-input" placeholder="วาง API Key ที่นี่..." />
+      <div id="api-modal-error" style="font-size:12px;color:var(--red);margin-bottom:10px;display:none">❌ API Key ไม่ถูกต้องหรือ quota หมด</div>
+      <div class="api-modal-btns">
+        <button class="api-connect-btn" onclick="connectApi()">เชื่อมต่อ</button>
+        <button class="api-skip-btn" onclick="skipApi()">ใช้ข้อมูล Simulated</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- LEFT -->
+    <div class="left-panel">
+      <div class="panel-section">
+        <div class="panel-title">ราคาทอง</div>
+        <div class="price-card active" onclick="selectGold(this,'XAU/USD',3421.50)">
+          <div class="pc-top">
+            <div class="pc-name">ทองคำสากล</div>
+            <div class="pc-tag">XAU/USD</div>
+          </div>
+          <div class="pc-price" id="xau-price">3,421.50</div>
+          <div class="pc-bottom">
+            <div class="pc-change up" id="xau-chg">▲ +12.30 (+0.36%)</div>
+            <div class="pc-spread">Spread: 0.30</div>
+          </div>
+          <div class="sparkline"><svg id="spark-xau" viewBox="0 0 200 32" preserveAspectRatio="none"></svg></div>
+        </div>
+        <div class="price-card" onclick="selectGold(this,'ทองไทย 96.5%',4425)">
+          <div class="pc-top">
+            <div class="pc-name">ทองไทย 96.5%</div>
+            <div class="pc-tag">TH/GOLD</div>
+          </div>
+          <div class="pc-price" id="th-price">44,250</div>
+          <div class="pc-bottom">
+            <div class="pc-change up" id="th-chg">▲ +150 (+0.34%)</div>
+            <div class="pc-spread">บาท/บาท</div>
+          </div>
+          <div class="sparkline"><svg id="spark-th" viewBox="0 0 200 32" preserveAspectRatio="none"></svg></div>
+        </div>
+        <div class="price-card" onclick="selectGold(this,'ทองแท่ง 99.99%',4480)">
+          <div class="pc-top">
+            <div class="pc-name">ทองแท่ง 99.99%</div>
+            <div class="pc-tag">BULLION</div>
+          </div>
+          <div class="pc-price" id="bar-price">44,800</div>
+          <div class="pc-bottom">
+            <div class="pc-change down" id="bar-chg">▼ -50 (-0.11%)</div>
+            <div class="pc-spread">บาท/บาท</div>
+          </div>
+          <div class="sparkline"><svg id="spark-bar" viewBox="0 0 200 32" preserveAspectRatio="none"></svg></div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">สถิติวันนี้</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:var(--text2)">เปิด (Open)</span>
+            <span style="font-family:'DM Mono';color:var(--text)" id="stat-open">3,409.20</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:var(--text2)">สูงสุด (High)</span>
+            <span style="font-family:'DM Mono';color:var(--green)" id="stat-high">3,435.80</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:var(--text2)">ต่ำสุด (Low)</span>
+            <span style="font-family:'DM Mono';color:var(--red)" id="stat-low">3,401.10</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px">
+            <span style="color:var(--text2)">ปริมาณ (Vol)</span>
+            <span style="font-family:'DM Mono';color:var(--text)">142,380 oz</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center-panel">
+      <div class="price-header">
+        <div class="ph-left">
+          <div class="ph-name" id="selected-name">XAU/USD</div>
+          <div class="ph-price" id="main-price">3,421.50</div>
+          <div class="ph-change-badge up" id="main-change">▲ +12.30 (+0.36%)</div>
+        </div>
+        <div class="ph-stats">
+          <div class="ph-stat">
+            <div class="ph-stat-label">ราคาซื้อ (Bid)</div>
+            <div class="ph-stat-val" id="bid-price">3,421.20</div>
+          </div>
+          <div class="ph-stat">
+            <div class="ph-stat-label">ราคาขาย (Ask)</div>
+            <div class="ph-stat-val" id="ask-price">3,421.50</div>
+          </div>
+          <div class="ph-stat">
+            <div class="ph-stat-label">เปลี่ยนแปลง 24H</div>
+            <div class="ph-stat-val" style="color:var(--green)">+0.36%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-area">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="chart-timeframes">
+            <button class="tf-btn" onclick="setTf(this,'1M')">1M</button>
+            <button class="tf-btn" onclick="setTf(this,'5M')">5M</button>
+            <button class="tf-btn active" onclick="setTf(this,'1H')">1H</button>
+            <button class="tf-btn" onclick="setTf(this,'4H')">4H</button>
+            <button class="tf-btn" onclick="setTf(this,'1D')">1D</button>
+            <button class="tf-btn" onclick="setTf(this,'1W')">1W</button>
+          </div>
+          <div style="display:flex;gap:8px;font-size:12px">
+            <span style="color:var(--green)">● MA(20): 3,415.2</span>
+            <span style="color:var(--blue)">● MA(50): 3,398.7</span>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <canvas id="mainChart" height="260"></canvas>
+        </div>
+
+        <div class="orderbook-grid">
+          <div class="ob-side">
+            <div class="ob-title ob-buy">▲ Buy Orders</div>
+            <div id="ob-buy-rows"></div>
+          </div>
+          <div class="ob-side">
+            <div class="ob-title ob-sell">▼ Sell Orders</div>
+            <div id="ob-sell-rows"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right-panel">
+      <!-- ORDER FORM -->
+      <div class="order-form">
+        <div class="panel-title" style="margin-bottom:12px">วางคำสั่งซื้อขาย</div>
+        <div class="order-tabs">
+          <button class="order-tab buy active" id="buy-tab" onclick="setOrderSide('buy')">ซื้อ (BUY)</button>
+          <button class="order-tab sell" id="sell-tab" onclick="setOrderSide('sell')">ขาย (SELL)</button>
+        </div>
+
+        <div class="form-row">
+          <div class="form-label">ประเภทคำสั่ง</div>
+          <select class="form-select" id="order-type" onchange="updateOrderType()">
+            <option value="market">Market Order (ตลาด)</option>
+            <option value="limit">Limit Order (กำหนดราคา)</option>
+            <option value="stop">Stop Order</option>
+            <option value="stop-limit">Stop-Limit Order</option>
+          </select>
+        </div>
+
+        <div class="form-row" id="price-row" style="display:none">
+          <div class="form-label">ราคา (USD/oz) <span id="current-price-hint">≈ 3,421.50</span></div>
+          <input class="form-input" type="number" id="order-price" placeholder="3421.50" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-label">จำนวน (oz)</div>
+          <input class="form-input" type="number" id="order-qty" placeholder="0.00" value="1" oninput="calcTotal()" />
+          <div class="qty-presets">
+            <div class="qty-preset" onclick="setQty(0.5)">0.5 oz</div>
+            <div class="qty-preset" onclick="setQty(1)">1 oz</div>
+            <div class="qty-preset" onclick="setQty(5)">5 oz</div>
+            <div class="qty-preset" onclick="setQty(10)">10 oz</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-label">Stop Loss <span id="sl-val">—</span></div>
+          <input class="form-input" type="number" id="stop-loss" placeholder="ไม่กำหนด" oninput="updateSL()" />
+        </div>
+        <div class="form-row">
+          <div class="form-label">Take Profit <span id="tp-val">—</span></div>
+          <input class="form-input" type="number" id="take-profit" placeholder="ไม่กำหนด" oninput="updateTP()" />
+        </div>
+
+        <div class="order-summary">
+          <div class="os-row"><span class="os-label">ราคาต่อหน่วย</span><span class="os-val" id="sum-price">3,421.50</span></div>
+          <div class="os-row"><span class="os-label">จำนวน</span><span class="os-val" id="sum-qty">1.00 oz</span></div>
+          <div class="os-row os-total"><span class="os-label" style="font-weight:600">มูลค่ารวม</span><span class="os-val" id="sum-total">$3,421.50</span></div>
+        </div>
+
+        <button class="submit-btn buy" id="submit-btn" onclick="placeOrder()">
+          ซื้อ XAU/USD
+        </button>
+      </div>
+
+      <!-- ALERTS -->
+      <div class="alert-section">
+        <div class="panel-title">ตั้งแจ้งเตือนราคา</div>
+        <div class="alert-form">
+          <select class="form-select" id="alert-dir" style="width:90px;flex-shrink:0">
+            <option value="above">≥ สูงกว่า</option>
+            <option value="below">≤ ต่ำกว่า</option>
+          </select>
+          <input class="alert-input" type="number" id="alert-price-input" placeholder="3500.00" />
+          <button class="alert-add-btn" onclick="addAlert()">+ เพิ่ม</button>
+        </div>
+        <div class="alert-list" id="alert-list"></div>
+      </div>
+
+      <!-- RECENT ORDERS -->
+      <div class="orders-section">
+        <div class="panel-title">คำสั่งล่าสุด</div>
+        <div class="order-list" id="order-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+  // ─── STATE ───
+  let currentSide = 'buy';
+  let currentPrice = 3421.50;
+  let alerts = [];
+  let orders = [
+    { id:'ORD001', type:'buy',  qty:2,   price:3410.00, status:'filled',    time:'09:12' },
+    { id:'ORD002', type:'sell', qty:1,   price:3430.50, status:'pending',   time:'10:45' },
+    { id:'ORD003', type:'buy',  qty:0.5, price:3398.20, status:'filled',    time:'08:30' },
+    { id:'ORD004', type:'sell', qty:3,   price:3450.00, status:'cancelled', time:'어제'   },
+  ];
+
+  // ─── SPARKLINES ───
+  function drawSparkline(id, vals, color) {
+    const svg = document.getElementById(id);
+    if (!svg) return;
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const w = 200, h = 32;
+    const pts = vals.map((v, i) => {
+      const x = (i / (vals.length - 1)) * w;
+      const y = h - ((v - min) / (max - min)) * (h - 4) - 2;
+      return `${x},${y}`;
+    }).join(' ');
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${pts} ${w},${h} 0,${h}" fill="url(#g${id})"/>
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/>
+    `;
+  }
+
+  // ─── MAIN CHART ───
+  let mainChart;
+  function buildChartData() {
+    const base = 3390;
+    const labels = [], data = [];
+    const now = new Date(); now.setMinutes(0, 0, 0);
+    for (let i = 23; i >= 0; i--) {
+      const d = new Date(now - i * 3600000);
+      labels.push(d.getHours().toString().padStart(2,'0') + ':00');
+      data.push(+(base + Math.random() * 60 - 10 + i * 0.8).toFixed(2));
+    }
+    return { labels, data };
+  }
+
+  function initChart() {
+    const { labels, data } = buildChartData();
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 260);
+    grad.addColorStop(0, 'rgba(212,168,67,0.25)');
+    grad.addColorStop(1, 'rgba(212,168,67,0.01)');
+
+    mainChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          borderColor: '#D4A843',
+          borderWidth: 2,
+          fill: true,
+          backgroundColor: grad,
+          pointRadius: 0,
+          tension: 0.35,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: {
+          backgroundColor: '#161A1F',
+          borderColor: 'rgba(212,168,67,0.3)',
+          borderWidth: 1,
+          titleColor: '#8A8FA8',
+          bodyColor: '#F0C96B',
+          bodyFont: { family: 'DM Mono', size: 14 },
+          callbacks: { label: ctx => `  $${ctx.parsed.y.toFixed(2)}` }
+        }},
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A4F62', font: { size: 11 } } },
+          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A4F62', font: { family: 'DM Mono', size: 11 }, callback: v => '$' + v.toFixed(0) }, position: 'right' }
+        }
+      }
+    });
+  }
+
+  // ─── ORDER BOOK ───
+  function renderOrderBook() {
+    const base = currentPrice;
+    const buys = Array.from({length:5}, (_,i) => ({
+      price: (base - (i+1)*0.3 - Math.random()*0.5).toFixed(2),
+      vol: (Math.random()*200+50).toFixed(1)
+    }));
+    const sells = Array.from({length:5}, (_,i) => ({
+      price: (base + (i+1)*0.3 + Math.random()*0.5).toFixed(2),
+      vol: (Math.random()*200+50).toFixed(1)
+    }));
+    const maxV = 300;
+
+    document.getElementById('ob-buy-rows').innerHTML = buys.map(r => `
+      <div class="ob-bar-wrap ob-row buy">
+        <div class="ob-bar buy" style="width:${(r.vol/maxV*100).toFixed(0)}%"></div>
+        <span class="ob-price">${r.price}</span>
+        <span class="ob-vol">${r.vol}</span>
+      </div>`).join('');
+
+    document.getElementById('ob-sell-rows').innerHTML = sells.map(r => `
+      <div class="ob-bar-wrap ob-row sell">
+        <div class="ob-bar sell" style="width:${(r.vol/maxV*100).toFixed(0)}%"></div>
+        <span class="ob-price">${r.price}</span>
+        <span class="ob-vol">${r.vol}</span>
+      </div>`).join('');
+  }
+
+  // ─── PRICE SIMULATION ───
+  function tick() {
+    const change = (Math.random() - 0.492) * 1.2;
+    currentPrice = +(currentPrice + change).toFixed(2);
+    const bid = +(currentPrice - 0.3).toFixed(2);
+    const ask = currentPrice;
+    const diff = +(currentPrice - 3409.20).toFixed(2);
+    const pct = +((diff / 3409.20) * 100).toFixed(2);
+    const isUp = diff >= 0;
+
+    document.getElementById('main-price').textContent = currentPrice.toLocaleString('en',{minimumFractionDigits:2});
+    document.getElementById('bid-price').textContent = bid.toLocaleString('en',{minimumFractionDigits:2});
+    document.getElementById('ask-price').textContent = ask.toLocaleString('en',{minimumFractionDigits:2});
+
+    const badge = document.getElementById('main-change');
+    badge.textContent = (isUp ? '▲ +' : '▼ ') + diff + ' (' + (isUp?'+':'') + pct + '%)';
+    badge.className = 'ph-change-badge ' + (isUp ? 'up' : 'down');
+
+    document.getElementById('xau-price').textContent = currentPrice.toLocaleString('en',{minimumFractionDigits:2});
+    document.getElementById('sum-price').textContent = currentPrice.toLocaleString('en',{minimumFractionDigits:2});
+    document.getElementById('current-price-hint').textContent = '≈ ' + currentPrice.toLocaleString('en',{minimumFractionDigits:2});
+    calcTotal();
+
+    // Push to chart
+    if (mainChart) {
+      mainChart.data.datasets[0].data.push(currentPrice);
+      mainChart.data.datasets[0].data.shift();
+      mainChart.update('none');
+    }
+
+    // Check alerts
+    alerts.forEach(a => {
+      if (a.dir === 'above' && currentPrice >= a.price && !a.triggered) {
+        a.triggered = true;
+        showToast('🔔', `ราคาแตะ ≥ $${a.price.toLocaleString()}`, 'gold');
+      } else if (a.dir === 'below' && currentPrice <= a.price && !a.triggered) {
+        a.triggered = true;
+        showToast('🔔', `ราคาแตะ ≤ $${a.price.toLocaleString()}`, 'red');
+      }
+    });
+
+    renderOrderBook();
+  }
+
+  // ─── CONTROLS ───
+  function switchTab(btn, tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function setTf(btn, tf) {
+    document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (mainChart) {
+      const { labels, data } = buildChartData();
+      mainChart.data.labels = labels;
+      mainChart.data.datasets[0].data = data;
+      mainChart.update();
+    }
+  }
+
+  function selectGold(card, name, price) {
+    document.querySelectorAll('.price-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    document.getElementById('selected-name').textContent = name;
+    currentPrice = price;
+    document.getElementById('main-price').textContent = price.toLocaleString('en',{minimumFractionDigits:2});
+    document.getElementById('submit-btn').textContent = (currentSide === 'buy' ? 'ซื้อ ' : 'ขาย ') + name;
+    calcTotal();
+  }
+
+  function setOrderSide(side) {
+    currentSide = side;
+    const buyTab = document.getElementById('buy-tab');
+    const sellTab = document.getElementById('sell-tab');
+    const btn = document.getElementById('submit-btn');
+    const name = document.getElementById('selected-name').textContent;
+
+    if (side === 'buy') {
+      buyTab.classList.add('active'); sellTab.classList.remove('active');
+      btn.className = 'submit-btn buy';
+      btn.textContent = 'ซื้อ ' + name;
+    } else {
+      sellTab.classList.add('active'); buyTab.classList.remove('active');
+      btn.className = 'submit-btn sell';
+      btn.textContent = 'ขาย ' + name;
+    }
+  }
+
+  function updateOrderType() {
+    const t = document.getElementById('order-type').value;
+    document.getElementById('price-row').style.display = (t !== 'market') ? 'block' : 'none';
+  }
+
+  function setQty(q) {
+    document.getElementById('order-qty').value = q;
+    calcTotal();
+  }
+
+  function calcTotal() {
+    const qty = parseFloat(document.getElementById('order-qty').value) || 0;
+    const price = currentPrice;
+    document.getElementById('sum-qty').textContent = qty.toFixed(2) + ' oz';
+    document.getElementById('sum-total').textContent = '$' + (qty * price).toLocaleString('en',{minimumFractionDigits:2});
+  }
+
+  function updateSL() {
+    const v = document.getElementById('stop-loss').value;
+    document.getElementById('sl-val').textContent = v ? '$'+parseFloat(v).toLocaleString() : '—';
+  }
+  function updateTP() {
+    const v = document.getElementById('take-profit').value;
+    document.getElementById('tp-val').textContent = v ? '$'+parseFloat(v).toLocaleString() : '—';
+  }
+
+  function placeOrder() {
+    const qty = parseFloat(document.getElementById('order-qty').value) || 0;
+    if (!qty || qty <= 0) { showToast('⚠️', 'กรุณากรอกจำนวนที่ต้องการ', 'gold'); return; }
+    const type = document.getElementById('order-type').value;
+    const price = type === 'market' ? currentPrice : (parseFloat(document.getElementById('order-price').value) || currentPrice);
+    const id = 'ORD' + String(orders.length + 1).padStart(3,'0');
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    const status = type === 'market' ? 'filled' : 'pending';
+
+    orders.unshift({ id, type: currentSide, qty, price, status, time });
+    renderOrders();
+
+    const emoji = currentSide === 'buy' ? '🟢' : '🔴';
+    const action = currentSide === 'buy' ? 'ซื้อ' : 'ขาย';
+    showToast(emoji, `${action} ${qty} oz @ $${price.toLocaleString()} — ${status === 'filled' ? 'สำเร็จ' : 'รอดำเนินการ'}`, currentSide === 'buy' ? 'green' : 'red');
+  }
+
+  function renderOrders() {
+    const el = document.getElementById('order-list');
+    el.innerHTML = orders.slice(0,8).map(o => `
+      <div class="order-item">
+        <div class="oi-top">
+          <span class="oi-type ${o.type}">${o.type === 'buy' ? '▲ BUY' : '▼ SELL'}</span>
+          <span class="oi-status ${o.status}">${o.status === 'filled' ? 'FILLED' : o.status === 'pending' ? 'PENDING' : 'CANCELLED'}</span>
+        </div>
+        <div class="oi-bottom">
+          <span class="oi-qty">${o.qty} oz</span>
+          <span class="oi-price">$${o.price.toLocaleString('en',{minimumFractionDigits:2})}</span>
+          <span class="oi-time">${o.time}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  function addAlert() {
+    const price = parseFloat(document.getElementById('alert-price-input').value);
+    const dir = document.getElementById('alert-dir').value;
+    if (!price) return;
+    alerts.push({ price, dir, triggered: false });
+    document.getElementById('alert-price-input').value = '';
+    renderAlerts();
+    showToast('🔔', `ตั้งแจ้งเตือน ${dir === 'above' ? '≥' : '≤'} $${price.toLocaleString()}`, 'gold');
+  }
+
+  function renderAlerts() {
+    const el = document.getElementById('alert-list');
+    el.innerHTML = alerts.map((a, i) => `
+      <div class="alert-item">
+        <div class="alert-item-left">
+          <div class="alert-dot ${a.dir}"></div>
+          <span class="alert-price">$${a.price.toLocaleString('en',{minimumFractionDigits:2})}</span>
+          <span class="alert-dir">${a.dir === 'above' ? '≥ สูงกว่า' : '≤ ต่ำกว่า'}</span>
+        </div>
+        <button class="alert-del" onclick="deleteAlert(${i})">✕</button>
+      </div>`).join('');
+  }
+
+  function deleteAlert(i) {
+    alerts.splice(i, 1);
+    renderAlerts();
+  }
+
+  function showToast(icon, msg, type) {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast';
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    t.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-msg">${msg}</span><span class="toast-time">${time}</span>`;
+    if (type === 'green') t.style.borderColor = 'rgba(0,211,127,0.4)';
+    else if (type === 'red') t.style.borderColor = 'rgba(255,71,87,0.4)';
+    c.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.4s'; setTimeout(() => t.remove(), 400); }, 4000);
+  }
+
+  // ─── API KEY & METALS.DEV ───
+  let apiKey = localStorage.getItem('metals_dev_api_key') || '';
+  let apiConnected = false;
+  let realTickInterval = null;
+
+  function showApiModal() {
+    document.getElementById('api-modal').style.display = 'flex';
+    if (apiKey) document.getElementById('api-key-input').value = apiKey;
+  }
+
+  function hideApiModal() {
+    document.getElementById('api-modal').style.display = 'none';
+  }
+
+  function skipApi() {
+    hideApiModal();
+    startSimulated();
+  }
+
+  async function connectApi() {
+    const key = document.getElementById('api-key-input').value.trim();
+    if (!key) return;
+    document.getElementById('api-modal-error').style.display = 'none';
+    document.getElementById('api-connect-btn') && (document.querySelector('.api-connect-btn').textContent = 'กำลังเชื่อมต่อ...');
+    try {
+      const res = await fetch(`https://api.metals.dev/v1/metal/spot?api_key=${key}&metal=gold&currency=USD`);
+      const data = await res.json();
+      if (data.status === 'success') {
+        apiKey = key;
+        localStorage.setItem('metals_dev_api_key', key);
+        apiConnected = true;
+        hideApiModal();
+        setApiStatus(true);
+        startRealData(key);
+        showToast('✅', 'เชื่อมต่อ Metals.dev สำเร็จ! ดึงราคาจริงแล้ว', 'green');
+      } else {
+        document.getElementById('api-modal-error').style.display = 'block';
+        document.querySelector('.api-connect-btn').textContent = 'เชื่อมต่อ';
+      }
+    } catch(e) {
+      document.getElementById('api-modal-error').style.display = 'block';
+      document.querySelector('.api-connect-btn').textContent = 'เชื่อมต่อ';
+    }
+  }
+
+  function setApiStatus(connected, error) {
+    const dot = document.getElementById('api-dot');
+    const txt = document.getElementById('api-status-text');
+    if (connected) {
+      dot.className = 'api-status-dot connected';
+      txt.className = 'api-status-text connected';
+      txt.textContent = 'Metals.dev ✓';
+    } else if (error) {
+      dot.className = 'api-status-dot error';
+      txt.className = 'api-status-text';
+      txt.textContent = 'เชื่อมต่อล้มเหลว';
+      txt.style.color = 'var(--red)';
+    } else {
+      dot.className = 'api-status-dot';
+      txt.className = 'api-status-text';
+      txt.textContent = 'Simulated';
+    }
+  }
+
+  async function fetchRealGoldPrice(key) {
+    try {
+      const res = await fetch(`https://api.metals.dev/v1/metal/spot?api_key=${key}&metal=gold&currency=USD`);
+      const data = await res.json();
+      if (data.status === 'success') {
+        const r = data.rate;
+        currentPrice = r.price;
+        const isUp = r.change >= 0;
+        const fmt = p => p.toLocaleString('en', {minimumFractionDigits:2});
+
+        document.getElementById('main-price').textContent = fmt(r.price);
+        document.getElementById('xau-price').textContent = fmt(r.price);
+        document.getElementById('bid-price').textContent = fmt(r.bid);
+        document.getElementById('ask-price').textContent = fmt(r.ask);
+        document.getElementById('stat-high').textContent = fmt(r.high);
+        document.getElementById('stat-low').textContent = fmt(r.low);
+        document.getElementById('sum-price').textContent = fmt(r.price);
+        document.getElementById('current-price-hint').textContent = '≈ ' + fmt(r.price);
+
+        const pct = r.change_percent >= 0 ? '+' + r.change_percent.toFixed(2) : r.change_percent.toFixed(2);
+        const chg = r.change >= 0 ? '+' + r.change.toFixed(2) : r.change.toFixed(2);
+        const badge = document.getElementById('main-change');
+        badge.textContent = (isUp ? '▲ ' : '▼ ') + chg + ' (' + pct + '%)';
+        badge.className = 'ph-change-badge ' + (isUp ? 'up' : 'down');
+
+        document.getElementById('xau-chg').textContent = (isUp ? '▲ +' : '▼ ') + Math.abs(r.change).toFixed(2) + ' (' + pct + '%)';
+        document.getElementById('xau-chg').className = 'pc-change ' + (isUp ? 'up' : 'down');
+
+        calcTotal();
+        renderOrderBook();
+
+        if (mainChart) {
+          mainChart.data.datasets[0].data.push(r.price);
+          mainChart.data.datasets[0].data.shift();
+          mainChart.update('none');
+        }
+
+        // check alerts
+        alerts.forEach(a => {
+          if (a.dir === 'above' && currentPrice >= a.price && !a.triggered) {
+            a.triggered = true;
+            showToast('🔔', `ราคาแตะ ≥ $${a.price.toLocaleString()}`, 'gold');
+          } else if (a.dir === 'below' && currentPrice <= a.price && !a.triggered) {
+            a.triggered = true;
+            showToast('🔔', `ราคาแตะ ≤ $${a.price.toLocaleString()}`, 'red');
+          }
+        });
+      }
+    } catch(e) { console.error('Fetch error:', e); }
+  }
+
+  function startRealData(key) {
+    if (realTickInterval) clearInterval(realTickInterval);
+    // Stop simulated tick
+    fetchRealGoldPrice(key);
+    // Metals.dev free plan: poll every 60s to stay within quota
+    realTickInterval = setInterval(() => fetchRealGoldPrice(key), 60000);
+    showToast('ℹ️', 'ราคาจริง อัปเดตทุก 60 วินาที (Free plan)', 'gold');
+  }
+
+  function startSimulated() {
+    setApiStatus(false);
+    setInterval(tick, 1800);
+  }
+
+  // ─── INIT ───
+  const sparkVals = () => Array.from({length:30}, (_,i) => 3380 + Math.sin(i*0.4)*20 + Math.random()*15);
+  drawSparkline('spark-xau', sparkVals(), '#D4A843');
+  drawSparkline('spark-th', sparkVals(), '#D4A843');
+  drawSparkline('spark-bar', sparkVals(), '#FF4757');
+  initChart();
+  renderOrderBook();
+  renderOrders();
+
+  // Auto-connect if saved API key exists
+  if (apiKey) {
+    document.getElementById('api-modal').style.display = 'none';
+    apiConnected = true;
+    setApiStatus(true);
+    startRealData(apiKey);
+  } else {
+    // Show modal on load
+    document.getElementById('api-modal').style.display = 'flex';
+    // simulated tick will start if user skips
+  }
+</script>
+</body>
+</html>
